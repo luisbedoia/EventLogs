@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres-event-logs
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+    volumes:
+      - 'postgres_data:/var/lib/postgresql'
+    healthcheck:
+      test: [ 'CMD-SHELL', 'pg_isready -U admin' ]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  dbmate:
+    image: amacneil/dbmate:2.26.0
+    container_name: dbmate-event-logs
+    environment:
+      - DATABASE_URL=postgres://admin:admin@postgres:5432/admin?sslmode=disable
+      - PGPASSWORD=admin
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: -d "/app/db/migrations" up
+
+  rabbit:
+    image: rabbitmq:3.9.7-management
+    container_name: rabbit-event-logs
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    healthcheck:
+      test: [ 'CMD', 'rabbitmqctl', 'status' ]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
