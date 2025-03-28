@@ -1,4 +1,26 @@
 services:
+  event-logs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: event-logs
+    ports:
+      - '3000:3000'
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - RABBITMQ_URL=amqp://admin:admin@rabbit:5672/
+    depends_on:
+      dbmate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      rabbit:
+        condition: service_healthy
+    restart: unless-stopped
+
   postgres:
     image: postgres:16
     container_name: postgres-event-logs
